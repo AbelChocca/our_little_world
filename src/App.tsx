@@ -1,15 +1,15 @@
-import { useState } from "react";
-import MainMenu from "./components/MainMenu";
-import GameCanvas from "./game/GameCanvas";
+import { MainMenu } from "./components/MainMenu/MainMenu";
+
+import { useGameStore } from "./store/gameStore";
 
 function App() {
-  const [started, setStarted] = useState(false);
+  const screen = useGameStore((state) => state.screen);
 
-  if (!started) {
-    return <MainMenu onStart={() => setStarted(true)} />;
+  if (screen === "menu") {
+    return <MainMenu />;
   }
 
-  return <GameCanvas />;
+  return <div>GAME AQUÍ XD</div>;
 }
 
 export default App;
