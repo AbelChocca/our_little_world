@@ -1,6 +1,6 @@
 import "./WorldMap.css";
 
-import worldMap from "../../assets/world-map.png";
+import worldMap from "../../assets/world-map.webp";
 
 import { useGameStore } from "../../store/gameStore";
 
