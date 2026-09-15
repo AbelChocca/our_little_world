@@ -3,6 +3,38 @@ import { mkdir, writeFile } from "node:fs/promises";
 const IMAGE_WIDTH = 1448;
 const IMAGE_HEIGHT = 1086;
 
+const sourceSizes = {
+  idle: {
+    width: 140,
+    height: 190,
+  },
+
+  walk: {
+    width: 150,
+    height: 190,
+  },
+
+  jump: {
+    width: 155,
+    height: 215,
+  },
+
+  interact: {
+    width: 160,
+    height: 190,
+  },
+
+  punch: {
+    width: 220,
+    height: 190,
+  },
+
+  emote: {
+    width: 170,
+    height: 190,
+  },
+};
+
 const animations = {
   idle: [
     [303, 3, 106, 177],
@@ -54,8 +86,14 @@ const animations = {
 const frames = {};
 
 for (const [animation, rectangles] of Object.entries(animations)) {
+  const sourceSize = sourceSizes[animation];
+
   rectangles.forEach(([x, y, width, height], index) => {
     const name = `${animation}-${index}`;
+
+    const offsetX = Math.round((sourceSize.width - width) / 2);
+
+    const offsetY = sourceSize.height - height;
 
     frames[name] = {
       frame: {
@@ -64,17 +102,20 @@ for (const [animation, rectangles] of Object.entries(animations)) {
         w: width,
         h: height,
       },
+
       rotated: false,
-      trimmed: false,
+      trimmed: true,
+
       spriteSourceSize: {
-        x: 0,
-        y: 0,
+        x: offsetX,
+        y: offsetY,
         w: width,
         h: height,
       },
+
       sourceSize: {
-        w: width,
-        h: height,
+        w: sourceSize.width,
+        h: sourceSize.height,
       },
     };
   });
