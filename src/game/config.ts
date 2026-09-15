@@ -1,16 +1,17 @@
 import Phaser from "phaser";
 
 import { UrbanizationScene } from "./scenes/UrbanizationScene";
+import { NextScene } from "./scenes/NextScene";
 
 export function createGameConfig(level: number): Phaser.Types.Core.GameConfig {
   const scenes: Record<number, (typeof Phaser.Scene)[]> = {
-    1: [UrbanizationScene],
-
-    // Luego:
-    // 2: [UniversityScene],
-    // 3: [CinemaScene],
-    // 4: [BeachScene],
-    // 5: [JapanScene],
+    /*
+     * La primera escena del arreglo se inicia
+     * automáticamente.
+     *
+     * Las demás quedan registradas y disponibles.
+     */
+    1: [UrbanizationScene, NextScene],
   };
 
   return {
@@ -29,7 +30,7 @@ export function createGameConfig(level: number): Phaser.Types.Core.GameConfig {
       arcade: {
         gravity: {
           x: 0,
-          y: 900,
+          y: 0,
         },
 
         debug: false,
@@ -41,6 +42,6 @@ export function createGameConfig(level: number): Phaser.Types.Core.GameConfig {
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
 
-    scene: scenes[level] ?? [UrbanizationScene],
+    scene: scenes[level] ?? [UrbanizationScene, NextScene],
   };
 }
