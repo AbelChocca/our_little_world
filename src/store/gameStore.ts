@@ -1,25 +1,104 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-type GameScreen = "menu" | "game";
+export type GameScreen =
+  | "menu"
+  | "world-map"
+  | "urbanization"
+  | "university"
+  | "cinema"
+  | "beach"
+  | "japan";
 
 interface GameState {
   screen: GameScreen;
-  memoriesFound: number;
-  lettersFound: number;
-  easterEggsFound: number;
+
+  completedLevels: number[];
 
   startGame: () => void;
-  returnToMenu: () => void;
+  goToMenu: () => void;
+  goToWorldMap: () => void;
+
+  enterLevel: (level: number) => void;
+  completeLevel: (level: number) => void;
+
+  isLevelUnlocked: (level: number) => boolean;
+
+  resetProgress: () => void;
 }
 
-export const useGameStore = create<GameState>((set) => ({
-  screen: "menu",
+export const useGameStore = create<GameState>()(
+  persist(
+    (set, get) => ({
+      screen: "menu",
 
-  memoriesFound: 0,
-  lettersFound: 0,
-  easterEggsFound: 0,
+      completedLevels: [],
 
-  startGame: () => set({ screen: "game" }),
+      startGame: () => {
+        set({
+          screen: "world-map",
+        });
+      },
 
-  returnToMenu: () => set({ screen: "menu" }),
-}));
+      goToMenu: () => {
+        set({
+          screen: "menu",
+        });
+      },
+
+      goToWorldMap: () => {
+        set({
+          screen: "world-map",
+        });
+      },
+
+      enterLevel: (level) => {
+        if (!get().isLevelUnlocked(level)) {
+          return;
+        }
+
+        const screens: Record<number, GameScreen> = {
+          1: "urbanization",
+          2: "university",
+          3: "cinema",
+          4: "beach",
+          5: "japan",
+        };
+
+        set({
+          screen: screens[level],
+        });
+      },
+
+      completeLevel: (level) => {
+        const completedLevels = get().completedLevels;
+
+        if (completedLevels.includes(level)) {
+          return;
+        }
+
+        set({
+          completedLevels: [...completedLevels, level],
+        });
+      },
+
+      isLevelUnlocked: (level) => {
+        if (level === 1) {
+          return true;
+        }
+
+        return get().completedLevels.includes(level - 1);
+      },
+
+      resetProgress: () => {
+        set({
+          completedLevels: [],
+          screen: "menu",
+        });
+      },
+    }),
+    {
+      name: "our-little-world-progress",
+    },
+  ),
+);
