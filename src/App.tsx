@@ -1,5 +1,6 @@
 import { MainMenu } from "./components/MainMenu/MainMenu";
 import { WorldMap } from "./components/WorldMap/WorldMap";
+import { GameCanvas } from "./game/GameCanvas";
 
 import { useGameStore } from "./store/gameStore";
 
@@ -14,19 +15,19 @@ function App() {
       return <WorldMap />;
 
     case "urbanization":
-      return <div>NIVEL 1 - URBANIZACIÓN</div>;
+      return <GameCanvas level={1} />;
 
     case "university":
-      return <div>NIVEL 2 - UNIVERSIDAD</div>;
+      return <GameCanvas level={2} />;
 
     case "cinema":
-      return <div>NIVEL 3 - CINE</div>;
+      return <GameCanvas level={3} />;
 
     case "beach":
-      return <div>NIVEL 4 - PLAYA</div>;
+      return <GameCanvas level={4} />;
 
     case "japan":
-      return <div>NIVEL 5 - JAPÓN</div>;
+      return <GameCanvas level={5} />;
 
     default:
       return <MainMenu />;
