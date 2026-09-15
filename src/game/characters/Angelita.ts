@@ -55,7 +55,9 @@ export class Angelita {
 
   private direction: Direction = "down";
 
-  private actionLocked = false;
+  private animationLocked = false;
+  private movementLocked = false;
+  private isJumping = false;
   private jumpOffset = 0;
 
   constructor(scene: Phaser.Scene, options: AngelitaOptions) {
@@ -114,12 +116,10 @@ export class Angelita {
   update(): void {
     this.syncVisual();
 
-    if (this.actionLocked) {
-      this.arcadeBody.setVelocity(0);
-      return;
-    }
+    this.handleCommands();
 
-    if (this.handleCommands()) {
+    if (this.movementLocked) {
+      this.arcadeBody.setVelocity(0);
       return;
     }
 
@@ -137,38 +137,34 @@ export class Angelita {
 
     const movingDown = this.controls.down.isDown || this.cursors.down.isDown;
 
-    if (movingLeft) {
-      movement.x -= 1;
-    }
-
-    if (movingRight) {
-      movement.x += 1;
-    }
-
-    if (movingUp) {
-      movement.y -= 1;
-    }
-
-    if (movingDown) {
-      movement.y += 1;
-    }
+    if (movingLeft) movement.x -= 1;
+    if (movingRight) movement.x += 1;
+    if (movingUp) movement.y -= 1;
+    if (movingDown) movement.y += 1;
 
     if (movement.lengthSq() === 0) {
       this.arcadeBody.setVelocity(0);
-      this.playAnimation(ANGELITA_ANIMATIONS.idle);
+
+      if (!this.animationLocked) {
+        this.playAnimation(ANGELITA_ANIMATIONS.idle);
+      }
+
       return;
     }
 
-    /*
-     * Evita que el movimiento diagonal sea más rápido.
-     */
-    movement.normalize().scale(this.speed);
+    movement.normalize();
+
+    const currentSpeed = this.isJumping ? this.speed * 1.35 : this.speed;
+
+    movement.scale(currentSpeed);
 
     this.arcadeBody.setVelocity(movement.x, movement.y);
 
     this.updateDirection(movement);
 
-    this.playAnimation(ANGELITA_ANIMATIONS.walk);
+    if (!this.animationLocked) {
+      this.playAnimation(ANGELITA_ANIMATIONS.walk);
+    }
   }
 
   private updateDirection(movement: Phaser.Math.Vector2): void {
@@ -194,59 +190,58 @@ export class Angelita {
     }
   }
 
-  private handleCommands(): boolean {
+  private handleCommands(): void {
     if (Phaser.Input.Keyboard.JustDown(this.controls.jump)) {
       void this.jump();
-      return true;
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.controls.punch)) {
       void this.punch();
-      return true;
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.controls.interact)) {
       void this.interact();
-      return true;
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.controls.emoteDizzy)) {
       void this.emote("dizzy");
-      return true;
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.controls.emoteHappy)) {
       void this.emote("happy");
-      return true;
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.controls.emoteSit)) {
       void this.emote("sit");
-      return true;
+      return;
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.controls.emoteShy)) {
       void this.emote("shy");
-      return true;
     }
-
-    return false;
   }
 
   async jump(): Promise<void> {
-    if (this.actionLocked) {
+    if (this.animationLocked || this.isJumping) {
       return;
     }
 
-    this.lockAction();
+    this.animationLocked = true;
+    this.isJumping = true;
 
     this.sprite.play(ANGELITA_ANIMATIONS.jump, true);
 
     await new Promise<void>((resolve) => {
       this.scene.tweens.add({
         targets: this,
-        jumpOffset: -40,
-        duration: 240,
+        jumpOffset: -55,
+
+        duration: 300,
         ease: "Quad.Out",
         yoyo: true,
 
@@ -257,62 +252,71 @@ export class Angelita {
       });
     });
 
-    this.unlockAction();
+    this.isJumping = false;
+    this.animationLocked = false;
   }
 
   async punch(): Promise<void> {
-    if (this.actionLocked) {
+    if (this.animationLocked) {
       return;
     }
 
     this.lockAction();
 
-    this.onPunch?.(this);
+    try {
+      this.onPunch?.(this);
 
-    await this.playOneShotAnimation(ANGELITA_ANIMATIONS.punch);
-
-    this.unlockAction();
+      await this.playOneShotAnimation(ANGELITA_ANIMATIONS.punch);
+    } finally {
+      this.unlockAction();
+    }
   }
 
   async interact(): Promise<void> {
-    if (this.actionLocked) {
+    if (this.animationLocked) {
       return;
     }
 
     this.lockAction();
 
-    this.onInteract?.(this);
+    try {
+      this.onInteract?.(this);
 
-    await this.playOneShotAnimation(ANGELITA_ANIMATIONS.interact);
-
-    this.unlockAction();
+      await this.playOneShotAnimation(ANGELITA_ANIMATIONS.interact);
+    } finally {
+      this.unlockAction();
+    }
   }
 
   async emote(emote: AngelitaEmote): Promise<void> {
-    if (this.actionLocked) {
+    if (this.animationLocked) {
       return;
     }
 
     this.lockAction();
 
-    this.sprite.stop();
-    this.sprite.setFrame(ANGELITA_EMOTES[emote]);
+    try {
+      this.sprite.stop();
+      this.sprite.setFrame(ANGELITA_EMOTES[emote]);
 
-    await new Promise<void>((resolve) => {
-      this.scene.time.delayedCall(900, resolve);
-    });
-
-    this.unlockAction();
+      await new Promise<void>((resolve) => {
+        this.scene.time.delayedCall(900, resolve);
+      });
+    } finally {
+      this.unlockAction();
+    }
   }
 
   private lockAction(): void {
-    this.actionLocked = true;
+    this.animationLocked = true;
+    this.movementLocked = true;
+
     this.arcadeBody.setVelocity(0);
   }
 
   private unlockAction(): void {
-    this.actionLocked = false;
-    this.playAnimation(ANGELITA_ANIMATIONS.idle);
+    this.animationLocked = false;
+    this.movementLocked = false;
   }
 
   private playAnimation(key: string): void {
@@ -355,6 +359,15 @@ export class Angelita {
 
   getPhysicsObject(): Phaser.GameObjects.Zone {
     return this.bodyObject;
+  }
+
+  setControlsEnabled(enabled: boolean): void {
+    this.movementLocked = !enabled;
+
+    if (!enabled) {
+      this.arcadeBody.setVelocity(0);
+      this.playAnimation(ANGELITA_ANIMATIONS.idle);
+    }
   }
 
   getSprite(): Phaser.GameObjects.Sprite {
